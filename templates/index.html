@@ -1,23 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sullana Social V2</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; }
-        .post { border-bottom: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        :root {
+            --primary: #007bff;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1c1e21;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .container { width: 100%; max-width: 500px; }
+        
+        /* Caja de publicación */
+        .publisher { 
+            background: var(--card); padding: 15px; border-radius: 12px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        input, textarea { 
+            width: 100%; border: 1px solid #ddd; border-radius: 8px; 
+            padding: 10px; margin-bottom: 10px; box-sizing: border-box;
+            font-size: 14px; outline: none;
+        }
+        textarea { height: 80px; resize: none; }
+        button { 
+            background: var(--primary); color: white; border: none; 
+            padding: 10px 20px; border-radius: 20px; font-weight: bold; 
+            cursor: pointer; width: 100%; transition: 0.3s;
+        }
+        button:hover { opacity: 0.9; transform: scale(0.98); }
+
+        /* El Muro */
+        .post { 
+            background: var(--card); padding: 15px; border-radius: 12px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .post b { color: var(--primary); font-size: 15px; }
+        .post p { margin: 8px 0; line-height: 1.4; }
+        .post small { color: #65676b; font-size: 12px; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
-    <h2>Muro Instantáneo</h2>
-    <input type="text" id="user" placeholder="Tu nombre">
-    <textarea id="msg" placeholder="¿Qué pasa en Sullana?"></textarea>
-    <button onclick="publicar()">Publicar</button>
 
-    <div id="muro">
-        {% for p in posts %}
-            <div class="post"><b>{{ p.usuario }}:</b> {{ p.contenido }} <small>({{ p.hora }})</small></div>
-        {% endfor %}
+    <div class="container">
+        <h2 style="text-align: center;">🌊 Sullana Social</h2>
+        
+        <div class="publisher">
+            <input type="text" id="user" placeholder="¿Quién eres? (Ej: Jochis)">
+            <textarea id="msg" placeholder="¿Qué está pasando en Sullana?"></textarea>
+            <button onclick="publicar()">Publicar ahora 🚀</button>
+        </div>
+
+        <div id="muro">
+            {% for p in posts %}
+                <div class="post">
+                    <b>@{{ p.usuario }}</b>
+                    <p>{{ p.contenido }}</p>
+                    <small>{{ p.hora }}</small>
+                </div>
+            {% endfor %}
+        </div>
     </div>
 
     <script>
@@ -28,15 +85,21 @@
             var m = document.getElementById('msg').value;
             if(u && m) {
                 socket.emit('enviar_post', {usuario: u, contenido: m});
-                document.getElementById('msg').value = ''; // Limpiar cuadro
+                document.getElementById('msg').value = '';
+            } else {
+                alert("Escribe tu nombre y un mensaje, che.");
             }
         }
 
-        // Esta es la parte que hace que salga al instante
         socket.on('publicacion_instantanea', function(data) {
             var muro = document.getElementById('muro');
-            var nuevoHtml = '<div class="post"><b>' + data.usuario + ':</b> ' + data.contenido + ' <small>(' + data.hora + ')</small></div>';
-            muro.innerHTML = nuevoHtml + muro.innerHTML;
+            var nuevoHtml = `
+                <div class="post">
+                    <b>@${data.usuario}</b>
+                    <p>${data.contenido}</p>
+                    <small>${data.hora}</small>
+                </div>`;
+            muro.insertAdjacentHTML('afterbegin', nuevoHtml);
         });
     </script>
 </body>
