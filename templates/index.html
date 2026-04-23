@@ -15,6 +15,7 @@
             --neon-secondary: #c5ea86; /* Verde tipo Matrix */
             --text-light: #c5c6c7;
             --white: #ffffff;
+            --danger: #ff4a4a;
         }
         
         body { 
@@ -69,7 +70,7 @@
         .bio-text { font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
         
         /* FORMULARIOS Y CAJAS DE TEXTO */
-        .edit-form input, .edit-form textarea, .post-box textarea { 
+        .edit-form input, .edit-form textarea, .post-box textarea, .comment-box input { 
             width: 100%; 
             background: #0b0c10;
             color: var(--white);
@@ -83,7 +84,7 @@
             transition: 0.3s;
         }
         
-        .edit-form input:focus, .edit-form textarea:focus, .post-box textarea:focus {
+        .edit-form input:focus, .edit-form textarea:focus, .post-box textarea:focus, .comment-box input:focus {
             border-color: var(--neon-accent);
             box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
         }
@@ -130,6 +131,7 @@
             overflow: hidden;
             transition: 0.3s;
             animation: slideIn 0.4s ease-out;
+            margin-bottom: 10px;
         }
         
         .post:hover {
@@ -148,15 +150,51 @@
             color: var(--neon-accent);
         }
         
-        .content { padding: 15px 20px; flex-grow: 1; }
+        .content { padding: 15px 20px; flex-grow: 1; position: relative; }
         
         .content small { color: #888; font-size: 12px; }
         .content b { color: var(--white); font-family: 'Rajdhani', sans-serif; font-size: 18px;}
         .content p { margin-top: 10px; line-height: 1.5; font-size: 15px;}
         
-        /* Avatar chiquito en los posts */
         .post-avatar {
             width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 8px; border: 1px solid var(--neon-accent);
+        }
+
+        /* MULTIMEDIA */
+        .media-content {
+            margin-top: 15px;
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid #333;
+            display: block;
+        }
+
+        /* COMENTARIOS */
+        .comment-section {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-top: 1px solid #333;
+        }
+        .comment {
+            font-size: 13px;
+            padding: 5px 0;
+            border-bottom: 1px solid #222;
+        }
+        .comment b { color: var(--neon-accent); font-size: 13px; }
+
+        .btn-delete {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            width: auto;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+        .btn-delete:hover {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
         }
 
         @keyframes slideIn {
@@ -164,7 +202,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* SCROLLBAR GAMER */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
@@ -184,9 +221,17 @@
                     <p class="bio-text">{{ bio }}</p>
                 </div>
             </div>
+            
+            <a href="/perfil/{{ usuario }}" style="text-decoration: none;">
+                <button style="margin-bottom: 10px; background: rgba(0,243,255,0.1);">Ver mi Perfil</button>
+            </a>
+
             <hr style="border-color: #333; margin: 20px 0;">
+            
             <form action="/editar_perfil" method="POST" class="edit-form">
+                <label style="font-size: 11px; color: var(--neon-accent);">URL FOTO PERFIL</label>
                 <input type="text" name="foto_url" placeholder="URL de tu foto" value="{{ avatar }}">
+                <label style="font-size: 11px; color: var(--neon-accent);">BIO</label>
                 <textarea name="bio" placeholder="Tu biografía..." rows="3">{{ bio }}</textarea>
                 <button type="submit" style="font-size: 14px; padding: 8px;">Actualizar Stats</button>
             </form>
@@ -196,20 +241,45 @@
 
         <main class="feed">
             <div class="post-box">
-                <textarea id="msg" placeholder="¿Qué hay de nuevo, {{ usuario }}? Escribe tu mensaje aquí..." style="height: 80px; resize: none;"></textarea>
-                <button onclick="publicar()" style="margin-top: 10px;">&gt; Enviar Mensaje</button>
+                <textarea id="msg" placeholder="¿Qué hay de nuevo, {{ usuario }}? Escribe algo épico..." style="height: 80px; resize: none;"></textarea>
+                <input type="text" id="media_url" placeholder="Pega link de Imagen o Video (.mp4 / .jpg / .gif)" style="background: #0b0c10; color: white; border: 1px solid #444; width: 100%; padding: 8px; border-radius: 5px; margin-bottom: 10px;">
+                
+                <button onclick="publicar()">&gt; Lanzar Publicación</button>
             </div>
 
             <div id="muro">
                 {% for p in posts %}
-                <div class="post">
-                    <div class="votes">▲<br>0<br>▼</div>
-                    <div class="content">
-                        <small>
-                            <img src="{{ p.avatar }}" class="post-avatar">
-                            <b>{{ p.usuario }}</b> // {{ p.hora }}
-                        </small>
-                        <p>{{ p.contenido }}</p>
+                <div class="post-container" id="container-{{ p.id }}">
+                    <div class="post">
+                        <div class="votes">▲<br>0<br>▼</div>
+                        <div class="content">
+                            {% if p.usuario == usuario %}
+                            <button class="btn-delete" onclick="eliminarPost('{{ p.id }}')">BORRAR</button>
+                            {% endif %}
+
+                            <small>
+                                <img src="{{ p.avatar }}" class="post-avatar">
+                                <b>{{ p.usuario }}</b> // {{ p.hora }}
+                            </small>
+                            <p>{{ p.contenido }}</p>
+
+                            {% if p.media_url %}
+                                {% if p.media_url.endswith('.mp4') %}
+                                <video src="{{ p.media_url }}" class="media-content" controls></video>
+                                {% else %}
+                                <img src="{{ p.media_url }}" class="media-content">
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="comment-section">
+                        <div id="comments-{{ p.id }}">
+                            </div>
+                        <div class="comment-box" style="display: flex; gap: 5px; margin-top: 10px;">
+                            <input type="text" id="input-{{ p.id }}" placeholder="Escribe un comentario..." style="margin-bottom: 0;">
+                            <button onclick="comentar('{{ p.id }}')" style="width: auto; padding: 5px 15px;">OK</button>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -219,28 +289,80 @@
 
     <script>
         var socket = io();
+        var mi_usuario = "{{ usuario }}";
+
         function publicar() {
             var m = document.getElementById('msg').value;
-            if(m.trim() !== '') {
-                socket.emit('enviar_post', {contenido: m});
+            var media = document.getElementById('media_url').value;
+            if(m.trim() !== '' || media.trim() !== '') {
+                socket.emit('enviar_post', {contenido: m, media_url: media});
                 document.getElementById('msg').value = '';
+                document.getElementById('media_url').value = '';
+            }
+        }
+
+        function eliminarPost(id) {
+            if(confirm("¿Seguro que quieres borrar este post?")) {
+                socket.emit('borrar_post', id);
+            }
+        }
+
+        function comentar(postId) {
+            var input = document.getElementById('input-' + postId);
+            if(input.value.trim() !== '') {
+                socket.emit('enviar_comentario', {post_id: postId, texto: input.value});
+                input.value = '';
             }
         }
 
         socket.on('publicacion_instantanea', function(data) {
             var muro = document.getElementById('muro');
+            var mediaHtml = '';
+            if(data.media_url) {
+                if(data.media_url.includes('.mp4')) {
+                    mediaHtml = `<video src="${data.media_url}" class="media-content" controls></video>`;
+                } else {
+                    mediaHtml = `<img src="${data.media_url}" class="media-content">`;
+                }
+            }
+
+            var deleteBtn = (data.usuario === mi_usuario) ? `<button class="btn-delete" onclick="eliminarPost('${data.id}')">BORRAR</button>` : '';
+
             var nuevoHtml = `
-                <div class="post">
-                    <div class="votes">▲<br>0<br>▼</div>
-                    <div class="content">
-                        <small>
-                            <img src="${data.avatar}" class="post-avatar">
-                            <b>${data.usuario}</b> // ${data.hora}
-                        </small>
-                        <p>${data.contenido}</p>
+                <div class="post-container" id="container-${data.id}">
+                    <div class="post">
+                        <div class="votes">▲<br>0<br>▼</div>
+                        <div class="content">
+                            ${deleteBtn}
+                            <small>
+                                <img src="${data.avatar}" class="post-avatar">
+                                <b>${data.usuario}</b> // ${data.hora}
+                            </small>
+                            <p>${data.contenido}</p>
+                            ${mediaHtml}
+                        </div>
+                    </div>
+                    <div class="comment-section">
+                        <div id="comments-${data.id}"></div>
+                        <div class="comment-box" style="display: flex; gap: 5px; margin-top: 10px;">
+                            <input type="text" id="input-${data.id}" placeholder="Escribe un comentario..." style="margin-bottom: 0;">
+                            <button onclick="comentar('${data.id}')" style="width: auto; padding: 5px 15px;">OK</button>
+                        </div>
                     </div>
                 </div>`;
             muro.insertAdjacentHTML('afterbegin', nuevoHtml);
+        });
+
+        socket.on('post_eliminado', function(id) {
+            var el = document.getElementById('container-' + id);
+            if(el) el.remove();
+        });
+
+        socket.on('nuevo_comentario', function(data) {
+            var box = document.getElementById('comments-' + data.post_id);
+            if(box) {
+                box.innerHTML += `<div class="comment"><b>${data.usuario}:</b> ${data.texto}</div>`;
+            }
         });
     </script>
 </body>
