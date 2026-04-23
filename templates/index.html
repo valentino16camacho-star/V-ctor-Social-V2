@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sullana Social V2</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; }
+        .post { border-bottom: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Muro Instantáneo</h2>
+    <input type="text" id="user" placeholder="Tu nombre">
+    <textarea id="msg" placeholder="¿Qué pasa en Sullana?"></textarea>
+    <button onclick="publicar()">Publicar</button>
+
+    <div id="muro">
+        {% for p in posts %}
+            <div class="post"><b>{{ p.usuario }}:</b> {{ p.contenido }} <small>({{ p.hora }})</small></div>
+        {% endfor %}
+    </div>
+
+    <script>
+        var socket = io();
+
+        function publicar() {
+            var u = document.getElementById('user').value;
+            var m = document.getElementById('msg').value;
+            if(u && m) {
+                socket.emit('enviar_post', {usuario: u, contenido: m});
+                document.getElementById('msg').value = ''; // Limpiar cuadro
+            }
+        }
+
+        // Esta es la parte que hace que salga al instante
+        socket.on('publicacion_instantanea', function(data) {
+            var muro = document.getElementById('muro');
+            var nuevoHtml = '<div class="post"><b>' + data.usuario + ':</b> ' + data.contenido + ' <small>(' + data.hora + ')</small></div>';
+            muro.innerHTML = nuevoHtml + muro.innerHTML;
+        });
+    </script>
+</body>
+</html>
