@@ -4,10 +4,22 @@ eventlet.monkey_patch()
 import os, time, json, random, uuid
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import SocketIO, emit
+from werkzeug.utils import secure_filename # Importante para limpiar nombres de archivos
 
 app = Flask(__name__)
 app.secret_key = 'sullana_ultra_secret_2026'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+
+# --- CONFIGURACIÓN DE SUBIDAS ---
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Creamos la carpeta automáticamente si no existe
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# --------------------------------
 
 DB_PATH = 'datos.json'
 
@@ -25,17 +37,38 @@ def index():
         return redirect(url_for('login'))
     db = cargar_datos()
     
-    # Obtenemos info del usuario actual
     user_info = db['usuarios'].get(session['usuario'], {})
     
-    # Pasamos todo al HTML
     return render_template('index.html', 
                            posts=db['posts'], 
                            usuario=session['usuario'],
                            bio=user_info.get('bio', 'Sin biografía.'),
                            avatar=user_info.get('avatar', 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png'))
 
-# --- NUEVO: RUTA PARA VER EL PERFIL ---
+# --- RUTA PARA RECIBIR ARCHIVOS DE LA PC ---
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'usuario' not in session:
+        return "No autorizado", 401
+    
+    if 'file' not in request.files:
+        return "No hay archivo", 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return "Nombre vacío", 400
+        
+    if file and allowed_file(file.filename):
+        # Creamos nombre único con tiempo para evitar duplicados
+        filename = secure_filename(file.filename)
+        nuevo_nombre = f"{int(time.time())}_{filename}"
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], nuevo_nombre))
+        
+        # Devolvemos la ruta relativa para que el navegador la encuentre
+        return f"/static/uploads/{nuevo_nombre}"
+    
+    return "Tipo de archivo no permitido", 400
+
 @app.route('/perfil/<nombre_usuario>')
 def ver_perfil(nombre_usuario):
     if 'usuario' not in session: 
@@ -46,7 +79,6 @@ def ver_perfil(nombre_usuario):
         return "Usuario no encontrado", 404
     
     user_info = db['usuarios'][nombre_usuario]
-    # Filtramos solo los posts de este usuario
     user_posts = [p for p in db['posts'] if p.get('usuario') == nombre_usuario]
     
     return render_template('perfil.html', 
@@ -55,7 +87,6 @@ def ver_perfil(nombre_usuario):
                            avatar=user_info.get('avatar', 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png'),
                            posts=user_posts,
                            usuario_actual=session['usuario'])
-# --------------------------------------
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -66,7 +97,6 @@ def login():
         
         user_data = db['usuarios'].get(nombre)
         
-        # Verificamos si es el formato nuevo (dict) o el viejo (str)
         if user_data:
             pin_registrado = user_data['codigo'] if isinstance(user_data, dict) else user_data
             if pin_registrado == codigo:
@@ -87,7 +117,6 @@ def registro():
         
         nuevo_codigo = str(random.randint(1000, 9999))
         
-        # Guardamos como objeto para incluir bio y foto después
         db['usuarios'][nombre] = {
             "codigo": nuevo_codigo,
             "bio": "¡Hola! Soy nuevo en Sullana Social.",
@@ -108,7 +137,6 @@ def editar_perfil():
         nueva_foto = request.form.get('foto_url')
         
         if nombre in db['usuarios']:
-            # Si el usuario era del formato viejo, lo convertimos
             if not isinstance(db['usuarios'][nombre], dict):
                 old_pin = db['usuarios'][nombre]
                 db['usuarios'][nombre] = {"codigo": old_pin}
@@ -123,39 +151,36 @@ def editar_perfil():
 def manejar_post(data):
     if 'usuario' in session:
         db = cargar_datos()
-        # Buscamos la foto del usuario para que el post la tenga
         user_info = db['usuarios'].get(session['usuario'], {})
-        foto = user_info.get('avatar', 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png') if isinstance(user_info, dict) else 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png'
+        # Verificación de seguridad para el avatar
+        if isinstance(user_info, dict):
+            foto = user_info.get('avatar', 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png')
+        else:
+            foto = 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_1.png'
 
-        # --- ACTUALIZADO: Agregamos ID y link de archivo ---
         nuevo_post = {
-            "id": str(uuid.uuid4()), # Genera un código único para borrarlo después
+            "id": str(uuid.uuid4()),
             "usuario": session['usuario'],
             "avatar": foto,
             "contenido": data['contenido'],
-            "media_url": data.get('media_url', ''), # Aquí se guarda el link del video/foto
+            "media_url": data.get('media_url', ''),
             "hora": time.strftime("%H:%M")
         }
-        # ----------------------------------------------------
         
         db['posts'].insert(0, nuevo_post)
         guardar_datos(db)
         emit('publicacion_instantanea', nuevo_post, broadcast=True)
 
-# --- NUEVO EVENTO: BORRAR POSTS EN TIEMPO REAL ---
 @socketio.on('borrar_post')
 def eliminar_post(post_id):
     if 'usuario' in session:
         db = cargar_datos()
-        
-        # Buscamos el post para asegurarnos que el que borra es el dueño
         post_a_borrar = next((p for p in db['posts'] if p.get('id') == post_id), None)
         
         if post_a_borrar and post_a_borrar['usuario'] == session['usuario']:
             db['posts'] = [p for p in db['posts'] if p.get('id') != post_id]
             guardar_datos(db)
             emit('post_eliminado', post_id, broadcast=True)
-# --------------------------------------------------
 
 if __name__ == '__main__':
     socketio.run(app)
