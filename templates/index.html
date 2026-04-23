@@ -3,30 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sullana Reddit</title>
+    <title>Sullana Social | Gamer Edition</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        :root { --reddit-blue: #0079D3; --bg: #DAE0E6; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
-        
-        .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; width: 95%; max-width: 1100px; padding-top: 20px; }
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Roboto:wght@400;500&display=swap');
 
-        /* BARRA LATERAL (PERFIL) */
-        .sidebar { background: white; border-radius: 5px; padding: 20px; height: fit-content; position: sticky; top: 20px; border: 1px solid #ccc; }
-        .avatar-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: #eee; }
-        .profile-info h3 { margin: 10px 0 5px; color: var(--reddit-blue); }
-        .bio-text { font-size: 14px; color: #555; margin-bottom: 15px; }
-        .edit-form input, .edit-form textarea { width: 100%; margin-bottom: 5px; font-size: 12px; }
+        :root { 
+            --bg-dark: #0b0c10; 
+            --card-dark: #1f2833; 
+            --neon-accent: #00f3ff; /* Cyan neón */
+            --neon-secondary: #c5ea86; /* Verde tipo Matrix */
+            --text-light: #c5c6c7;
+            --white: #ffffff;
+        }
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background-color: var(--bg-dark); 
+            background-image: radial-gradient(circle at 50% 0%, #1f2833 0%, transparent 70%);
+            color: var(--text-light); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+        }
+        
+        .layout { 
+            display: grid; 
+            grid-template-columns: 300px 1fr; 
+            gap: 25px; 
+            width: 95%; 
+            max-width: 1100px; 
+            padding-top: 30px; 
+        }
+
+        /* BARRA LATERAL (PERFIL GAMER) */
+        .sidebar { 
+            background: var(--card-dark); 
+            border-radius: 12px; 
+            padding: 25px; 
+            height: fit-content; 
+            position: sticky; 
+            top: 30px; 
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+        
+        .avatar-img { 
+            width: 90px; 
+            height: 90px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            border: 3px solid var(--neon-accent);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+        }
+        
+        .profile-info h3 { 
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 24px;
+            margin: 15px 0 5px; 
+            color: var(--white); 
+            text-shadow: 0 0 5px var(--neon-accent);
+        }
+        
+        .bio-text { font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+        
+        /* FORMULARIOS Y CAJAS DE TEXTO */
+        .edit-form input, .edit-form textarea, .post-box textarea { 
+            width: 100%; 
+            background: #0b0c10;
+            color: var(--white);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px; 
+            font-family: 'Roboto', sans-serif;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+        
+        .edit-form input:focus, .edit-form textarea:focus, .post-box textarea:focus {
+            border-color: var(--neon-accent);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        /* BOTONES GAMER */
+        button { 
+            cursor: pointer; 
+            background: transparent; 
+            color: var(--neon-accent); 
+            border: 1px solid var(--neon-accent); 
+            border-radius: 6px; 
+            padding: 10px 15px; 
+            font-weight: bold; 
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 16px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        button:hover { 
+            background: var(--neon-accent);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-accent);
+            transform: translateY(-2px);
+        }
 
         /* MURO DE POSTS */
-        .feed { display: flex; flex-direction: column; gap: 15px; }
-        .post-box { background: white; padding: 15px; border-radius: 5px; border: 1px solid #ccc; }
-        .post { background: white; border: 1px solid #ccc; border-radius: 5px; display: flex; }
-        .votes { background: #f8f9fa; width: 40px; display: flex; flex-direction: column; align-items: center; padding: 10px 0; border-right: 1px solid #eee; }
-        .content { padding: 10px 15px; flex-grow: 1; }
+        .feed { display: flex; flex-direction: column; gap: 20px; }
         
-        button { cursor: pointer; background: var(--reddit-blue); color: white; border: none; border-radius: 20px; padding: 8px 15px; font-weight: bold; }
+        .post-box { 
+            background: var(--card-dark); 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+        }
         
+        .post { 
+            background: var(--card-dark); 
+            border: 1px solid #333; 
+            border-radius: 12px; 
+            display: flex; 
+            overflow: hidden;
+            transition: 0.3s;
+            animation: slideIn 0.4s ease-out;
+        }
+        
+        .post:hover {
+            border-color: #555;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .votes { 
+            background: rgba(0,0,0,0.2); 
+            width: 50px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 15px 0; 
+            font-weight: bold;
+            color: var(--neon-accent);
+        }
+        
+        .content { padding: 15px 20px; flex-grow: 1; }
+        
+        .content small { color: #888; font-size: 12px; }
+        .content b { color: var(--white); font-family: 'Rajdhani', sans-serif; font-size: 18px;}
+        .content p { margin-top: 10px; line-height: 1.5; font-size: 15px;}
+        
+        /* Avatar chiquito en los posts */
+        .post-avatar {
+            width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 8px; border: 1px solid var(--neon-accent);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* SCROLLBAR GAMER */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-accent); }
+
         @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static; } }
     </style>
 </head>
@@ -37,32 +180,35 @@
             <div style="text-align: center;">
                 <img src="{{ avatar }}" class="avatar-img" alt="Foto">
                 <div class="profile-info">
-                    <h3>u/{{ usuario }}</h3>
+                    <h3>[ {{ usuario }} ]</h3>
                     <p class="bio-text">{{ bio }}</p>
                 </div>
             </div>
-            <hr>
+            <hr style="border-color: #333; margin: 20px 0;">
             <form action="/editar_perfil" method="POST" class="edit-form">
                 <input type="text" name="foto_url" placeholder="URL de tu foto" value="{{ avatar }}">
-                <textarea name="bio" placeholder="Tu biografía...">{{ bio }}</textarea>
-                <button type="submit" style="background: #222; font-size: 10px;">Guardar Perfil</button>
+                <textarea name="bio" placeholder="Tu biografía..." rows="3">{{ bio }}</textarea>
+                <button type="submit" style="font-size: 14px; padding: 8px;">Actualizar Stats</button>
             </form>
             <br>
-            <a href="/login" style="font-size: 12px; color: red;">Cerrar sesión</a>
+            <a href="/login" style="font-size: 12px; color: #ff4a4a; text-decoration: none; display: block; text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px;">&lt; DESCONECTAR &gt;</a>
         </aside>
 
         <main class="feed">
             <div class="post-box">
-                <textarea id="msg" placeholder="¿Qué quieres compartir, u/{{ usuario }}?" style="width: 100%; height: 60px;"></textarea>
-                <button onclick="publicar()" style="margin-top: 10px;">Publicar en Sullana</button>
+                <textarea id="msg" placeholder="¿Qué hay de nuevo, {{ usuario }}? Escribe tu mensaje aquí..." style="height: 80px; resize: none;"></textarea>
+                <button onclick="publicar()" style="margin-top: 10px;">&gt; Enviar Mensaje</button>
             </div>
 
             <div id="muro">
                 {% for p in posts %}
                 <div class="post">
-                    <div class="votes">⬆️<br>0<br>⬇️</div>
+                    <div class="votes">▲<br>0<br>▼</div>
                     <div class="content">
-                        <small>Publicado por <b>u/{{ p.usuario }}</b> a las {{ p.hora }}</small>
+                        <small>
+                            <img src="{{ p.avatar }}" class="post-avatar">
+                            <b>{{ p.usuario }}</b> // {{ p.hora }}
+                        </small>
                         <p>{{ p.contenido }}</p>
                     </div>
                 </div>
@@ -75,7 +221,7 @@
         var socket = io();
         function publicar() {
             var m = document.getElementById('msg').value;
-            if(m) {
+            if(m.trim() !== '') {
                 socket.emit('enviar_post', {contenido: m});
                 document.getElementById('msg').value = '';
             }
@@ -85,9 +231,12 @@
             var muro = document.getElementById('muro');
             var nuevoHtml = `
                 <div class="post">
-                    <div class="votes">⬆️<br>0<br>⬇️</div>
+                    <div class="votes">▲<br>0<br>▼</div>
                     <div class="content">
-                        <small>Publicado por <b>u/${data.usuario}</b> a las ${data.hora}</small>
+                        <small>
+                            <img src="${data.avatar}" class="post-avatar">
+                            <b>${data.usuario}</b> // ${data.hora}
+                        </small>
                         <p>${data.contenido}</p>
                     </div>
                 </div>`;
