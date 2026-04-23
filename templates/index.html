@@ -242,7 +242,14 @@
         <main class="feed">
             <div class="post-box">
                 <textarea id="msg" placeholder="¿Qué hay de nuevo, {{ usuario }}? Escribe algo épico..." style="height: 80px; resize: none;"></textarea>
+                
                 <input type="text" id="media_url" placeholder="Pega link de Imagen o Video (.mp4 / .jpg / .gif)" style="background: #0b0c10; color: white; border: 1px solid #444; width: 100%; padding: 8px; border-radius: 5px; margin-bottom: 10px;">
+                
+                <label style="color: var(--neon-accent); cursor: pointer; border: 1px solid var(--neon-accent); padding: 10px; display: block; text-align: center; border-radius: 5px; margin-bottom: 10px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 14px; text-transform: uppercase;">
+                    📁 O Selecciona Archivo de tu PC
+                    <input type="file" id="archivo_pc" style="display: none;">
+                </label>
+                <span id="file-name" style="font-size: 12px; color: #888; display: block; margin-bottom: 10px; text-align: center;"></span>
                 
                 <button onclick="publicar()">&gt; Lanzar Publicación</button>
             </div>
@@ -291,14 +298,50 @@
         var socket = io();
         var mi_usuario = "{{ usuario }}";
 
+        // NUEVO: Mostrar el nombre del archivo seleccionado al usuario
+        document.getElementById('archivo_pc').addEventListener('change', function(){
+            document.getElementById('file-name').innerText = this.files[0] ? `Archivo cargado: ${this.files[0].name}` : '';
+        });
+
+        // NUEVO: Modificada para enviar archivo o link
         function publicar() {
             var m = document.getElementById('msg').value;
             var media = document.getElementById('media_url').value;
-            if(m.trim() !== '' || media.trim() !== '') {
+            var fileInput = document.getElementById('archivo_pc');
+            
+            // Si el usuario eligió un archivo desde su PC
+            if (fileInput.files.length > 0) {
+                var formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                // Lo enviamos a la ruta Python para guardarlo
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if(!response.ok) throw new Error('Error al subir el archivo');
+                    return response.text();
+                })
+                .then(url_archivo => {
+                    // Una vez que Python nos devuelve la ruta del archivo, enviamos el post por Socket
+                    socket.emit('enviar_post', {contenido: m, media_url: url_archivo});
+                    limpiarCampos();
+                })
+                .catch(err => alert(err.message));
+            } 
+            // Si no hay archivo pero hay texto o un link pegado
+            else if (m.trim() !== '' || media.trim() !== '') {
                 socket.emit('enviar_post', {contenido: m, media_url: media});
-                document.getElementById('msg').value = '';
-                document.getElementById('media_url').value = '';
+                limpiarCampos();
             }
+        }
+
+        function limpiarCampos() {
+            document.getElementById('msg').value = '';
+            document.getElementById('media_url').value = '';
+            document.getElementById('archivo_pc').value = '';
+            document.getElementById('file-name').innerText = '';
         }
 
         function eliminarPost(id) {
