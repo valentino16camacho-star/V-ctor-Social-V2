@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Sullana Social</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Entrar</h2>
+        <form method="POST">
+            <input type="text" name="nombre" placeholder="TU NOMBRE" required>
+            <input type="password" name="codigo" placeholder="TU CÓDIGO (PIN)" required>
+            <button type="submit">Entrar 🚀</button>
+        </form>
+        <p><a href="/registro">¿No tienes cuenta? Regístrate aquí</a></p>
+    </div>
+</body>
+</html>
